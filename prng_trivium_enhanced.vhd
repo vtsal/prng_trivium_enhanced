@@ -15,7 +15,7 @@ use ieee.numeric_std.all;
 entity prng_trivium_enhanced is
    generic (
 			--RW : integer:= 64;  -- allowable values are 1, 2, ... 64 !-- no longer allowed!
-			N : integer:= 1 -- allowable values are 1, 2, 3
+			N : integer:= 4 -- allowable values are 1, 2, 3
 			-- When N = 1, rdi_data returns 64 bits of randomness
 			-- When N = 2, rdi_data returns 128 bits of randomness
 			-- When N = 3, rdi_data returns 192 bits of randomness
@@ -83,7 +83,31 @@ begin
     
     end generate instance4;
 
-    trivgen: for i in 1 to N generate
+trivium_primitive_basic: entity work.trivium(behavioral)
+	generic map(
+        M_SIZE          => 64
+    )
+    port map(
+        clk         => clk,
+        rst         => rst,
+
+        key           => key(80-1 downto 0),
+        iv            => iv(80-1 downto 0),
+        key_iv_update => key_iv_update,
+        init_done     => init_done,
+
+        din         => ctr,
+        din_valid   => din_valid,
+        din_ready   => din_ready,
+
+        dout        => rdi_data(64-1 downto 0),
+        dout_valid  => rdi_valid,
+        dout_ready  => rdi_ready,
+
+        done        => reseed_req
+    );
+
+    trivgen: for i in 2 to N generate
 
 	trivium_primitive: entity work.trivium(behavioral)
 	generic map(
@@ -96,17 +120,17 @@ begin
         key           => key(i*80-1 downto (i-1)*80),
         iv            => iv(i*80-1 downto (i-1)*80),
         key_iv_update => key_iv_update,
-        init_done     => init_done,
+        init_done     => open,
 
         din         => ctr,
         din_valid   => din_valid,
-        din_ready   => din_ready,
+        din_ready   => open,
 
         dout        => rdi_data(i*64-1 downto (i-1)*64),
-        dout_valid  => rdi_valid,
+        dout_valid  => open,
         dout_ready  => rdi_ready,
 
-        done        => reseed_req
+        done        => open
     );
 
     end generate trivgen;
